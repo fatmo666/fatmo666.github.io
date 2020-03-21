@@ -1,0 +1,80 @@
+<!DOCTYPE html><html lang="zh-Hans"><head><meta charset="utf-8"><meta name="X-UA-Compatible" content="IE=edge"><title> md5()函数的安全问题 · 失去了梦想的咸鱼</title><meta name="description" content="A Blog Powered By Hexo"><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="short icon" href="/favicon.png"><link rel="stylesheet" href="/css/jekyll.css"><!--[if lt IE 9]>
+<script src="js/html5shiv.min.js"></script>
+<script src="js/respond.min.js"></script>
+<![endif]--><meta name="generator" content="Hexo 4.2.0"></head><body><header class="row-flex-row limit-width vh-center"><a href="/" class="logo"><img src="/favicon.png"></a><nav><ul class="nav-list"><li class="nav-list-item"><a href="/" class="nav-link">Home</a></li><li class="nav-list-item"><a href="/archives/" class="nav-link active">   Blog</a></li><li class="nav-list-item"><a href="https://github.com/xxxxxx" target="_blank" class="nav-link">github</a></li><li class="nav-list-item"><a href="https://coding.net/u/xxxxxx" target="_blank" class="nav-link">coding</a></li><li class="nav-list-item"><a href="http://weibo.com/xxxxxx" target="_blank" class="nav-link">weibo</a></li><li class="nav-list-item"><a href="/atom.xml" class="nav-link">rss</a></li></ul></nav></header><div class="container limit-width"><section class="row-flex-row"><div class="post"><article class="post-block"><h2 class="post-title"><a href="/2020/03/21/md5-%E5%87%BD%E6%95%B0%E7%9A%84%E5%AE%89%E5%85%A8%E9%97%AE%E9%A2%98/" class="post-title-link">md5()函数的安全问题</a></h2><div class="post-meta"><ul class="post-tag-list"><li class="post-tag-item"><a href="/tags/PHP代码审计/" class="post-tag-link">PHP代码审计</a></li></ul><div class="post-time">Saturday, March 21st 2020</div></div><div class="post-content"><p>今天看到一篇博客:<a href="https://blog.csdn.net/baidu_41871794/article/details/83750615，" target="_blank" rel="noopener">https://blog.csdn.net/baidu_41871794/article/details/83750615，</a> 受到启发</p>
+<p>决定写一篇博文记录一下</p>
+<a id="more"></a>
+
+<div class="note">
+    <h5>题目分析</h5>
+    <p>CTF 题目分析</p>
+</div>
+
+<p>先看一道题：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">&lt;?php</span><br><span class="line">       if (isset($_GET[&#39;v1&#39;]) &amp;&amp; isset($_GET[&#39;v2&#39;])) &#123;</span><br><span class="line">           $logined &#x3D; true;</span><br><span class="line">        $v1 &#x3D; $_GET[&#39;v1&#39;];</span><br><span class="line">        $v2 &#x3D; $_GET[&#39;v2&#39;];</span><br><span class="line"></span><br><span class="line">        if (!ctype_alpha($v1)) &#123;$logined &#x3D; false;&#125;</span><br><span class="line">        if (!is_numeric($v2) ) &#123;$logined &#x3D; false;&#125;</span><br><span class="line">        if (md5($v1) !&#x3D; md5($v2)) &#123;$logined &#x3D; false;&#125;</span><br><span class="line"></span><br><span class="line">        if ($logined)&#123;</span><br><span class="line"></span><br><span class="line">            &#x2F;&#x2F; continuue to do other things</span><br><span class="line">        &#125; else &#123;</span><br><span class="line">            echo &quot;login failed&quot;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">?&gt;</span><br></pre></td></tr></table></figure>
+
+<p>分析题目：首先需要传入v1和v2两个参数，其中v1为字符串，v2为数字。然后使用md5()函数对两参数值进行处理，最后判断两处理后的md5值是否相等，若相等，则得到flag。</p>
+<div class="note info">
+    <h5>解题思路</h5>
+    <p>PHP弱类型</p>
+</div>
+
+<p>PHP中在字符串与数字进行松散比较时：</p>
+<ol>
+<li>若字符串和中有符号“.”，则当做小数点处理</li>
+<li>若字符串中有符号“E”、”e”，则当做科学计数法处理</li>
+<li>若字符串中出现其他非数字字符，则直接将后面的都截断</li>
+</ol>
+<p>然后再看这一段代码执行结果：</p>
+<p>代码：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">&lt;?php</span><br><span class="line">echo md5(&#39;240610708&#39;);</span><br><span class="line">echo (&quot;\n&quot;);</span><br><span class="line">echo md5(&#39;QNKCDZO&#39;);</span><br><span class="line">echo (&quot;\n&quot;);</span><br><span class="line">echo(md5(&#39;240610708&#39;) &#x3D;&#x3D; md5(&#39;QNKCDZO&#39;));</span><br><span class="line">?&gt;</span><br></pre></td></tr></table></figure>
+
+<p>结果</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">0e462097431906509019562988736854</span><br><span class="line">0e830400451993494058024219903391</span><br><span class="line">1</span><br></pre></td></tr></table></figure>
+
+<p>因此，只要传入 240610708 与 QNKCDZO， 就可以解出题目。因为，两值的md5值均为0e加一串数字，进行松散比较时，会当成科学计数法处理，就是0的很多次方，结果均为0，自然就相等。</p>
+<div class="note warming">
+    <h5>记录一些例子</h5>
+    <p>直接从简介提到的博客里拿来的例子</p>
+</div>
+
+<p>QNKCDZO<br>0e830400451993494058024219903391</p>
+<p>s878926199a<br>0e545993274517709034328855841020</p>
+<p>s155964671a<br>0e342768416822451524974117254469</p>
+<p>s214587387a<br>0e848240448830537924465865611904</p>
+<p>s214587387a<br>0e848240448830537924465865611904</p>
+<p>s878926199a<br>0e545993274517709034328855841020</p>
+<p>s1091221200a<br>0e940624217856561557816327384675</p>
+<p>s1885207154a<br>0e509367213418206700842008763514</p>
+<p>s1502113478a<br>0e861580163291561247404381396064</p>
+<p>s1885207154a<br>0e509367213418206700842008763514</p>
+<p>s1836677006a<br>0e481036490867661113260034900752</p>
+<p>s155964671a<br>0e342768416822451524974117254469</p>
+<p>s1184209335a<br>0e072485820392773389523109082030</p>
+<p>s1665632922a<br>0e731198061491163073197128363787</p>
+<p>s1502113478a<br>0e861580163291561247404381396064</p>
+<p>s1836677006a<br>0e481036490867661113260034900752</p>
+<p>s1091221200a<br>0e940624217856561557816327384675</p>
+<p>s155964671a<br>0e342768416822451524974117254469</p>
+<p>s1502113478a<br>0e861580163291561247404381396064</p>
+<p>s155964671a<br>0e342768416822451524974117254469</p>
+<p>s1665632922a<br>0e731198061491163073197128363787</p>
+<p>s155964671a<br>0e342768416822451524974117254469</p>
+<p>s1091221200a<br>0e940624217856561557816327384675</p>
+<p>s1836677006a<br>0e481036490867661113260034900752</p>
+<p>s1885207154a<br>0e509367213418206700842008763514</p>
+<p>s532378020a<br>0e220463095855511507588041205815</p>
+<p>s878926199a<br>0e545993274517709034328855841020</p>
+<p>s1091221200a<br>0e940624217856561557816327384675</p>
+<p>s214587387a<br>0e848240448830537924465865611904</p>
+<p>s1502113478a<br>0e861580163291561247404381396064</p>
+<p>s1091221200a<br>0e940624217856561557816327384675</p>
+<p>s1665632922a<br>0e731198061491163073197128363787</p>
+<p>s1885207154a<br>0e509367213418206700842008763514</p>
+<p>s1836677006a<br>0e481036490867661113260034900752</p>
+<p>s1665632922a<br>0e731198061491163073197128363787</p>
+<p>s878926199a<br>0e545993274517709034328855841020</p>
+</div></article><div class="pagination"><span class="pagination-prev">PREV</span><a href="/2020/03/14/BugKU-web4/" class="pagination-next">NEXT</a></div><div class="comments"></div></div><aside class="sidebar"><h3>分类标签</h3><ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/BugKU-writeup/" rel="tag">BugKU-writeup</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/PHP%E4%BB%A3%E7%A0%81%E5%AE%A1%E8%AE%A1/" rel="tag">PHP代码审计</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/css/" rel="tag">css</a></li></ul><h3>最新文章</h3><ul class="post-list"><li class="post-list-item"><a class="post-list-link" href="/2020/03/21/md5-%E5%87%BD%E6%95%B0%E7%9A%84%E5%AE%89%E5%85%A8%E9%97%AE%E9%A2%98/">md5()函数的安全问题</a></li><li class="post-list-item"><a class="post-list-link" href="/2020/03/14/BugKU-web4/">BugKU-web4</a></li><li class="post-list-item"><a class="post-list-link" href="/2020/03/14/register-globals%E7%9A%84%E5%8E%9F%E7%90%86%E5%8F%8A%E5%8D%B1%E5%AE%B3/">register_globals的原理及危害</a></li><li class="post-list-item"><a class="post-list-link" href="/2020/03/14/%E5%8F%98%E9%87%8F%E4%B8%80/">BugKU-变量一</a></li><li class="post-list-item"><a class="post-list-link" href="/2020/03/13/BugKU-web3/">BugKU-web3</a></li><li class="post-list-item"><a class="post-list-link" href="/2020/03/13/BugKU-%E7%9F%9B%E7%9B%BE/">BugKU-矛盾</a></li><li class="post-list-item"><a class="post-list-link" href="/2015/10/21/demo/">辨析 Sass 中的 Map 和 List</a></li></ul></aside></section></div><div class="extra"></div><footer class="footer"><div class="row-flex-row limit-width vh-center"><div class="copyright"><P>© 2020 <a href="/">Fatmo</P></div><div class="power"><p><a href="http://pinggod.com/" target="_blank" rel="noopener">Sean Sun</a>, 
+<a href="https://hexo.io" target="_blank" rel="noopener">Hexo</a>, 
+<a href="https://github.com/" target="_blank" rel="noopener">GitHub</a>, 
+<a href="https://jekyllrb.com/" target="_blank" rel="noopener">Jekyll</a></p></div></div></footer><script>(function(b,o,i,l,e,r){b.GoogleAnalyticsObject=l;b[l]||(b[l]=function(){(b[l].q=b[l].q||[]).push(arguments)});b[l].l=+new Date;e=o.createElement(i);r=o.getElementsByTagName(i)[0];e.src='//www.google-analytics.com/analytics.js';r.parentNode.insertBefore(e,r)}(window,document,'script','ga'));ga('create',"UA-80781234-1",'auto');ga('send','pageview');</script><script>var _hmt = _hmt || [];(function() {var hm = document.createElement("script");hm.src = "//hm.baidu.com/hm.js?ee75cf111111aa99f8540efa2570970";var s = document.getElementsByTagName("script")[0]; s.parentNode.insertBefore(hm, s);})();</script><script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script></body></html>
